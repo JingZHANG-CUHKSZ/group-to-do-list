@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>群组回忆册</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        .animate-spin { animation: spin 1s linear infinite; }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-4xl mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                        👥 群组回忆册
+                    </h1>
+                    <p class="text-sm text-amber-600 mt-1">
+                        📱 本地版本 - 数据保存在浏览器中
+                    </p>
+                </div>
+                <button 
+                    onclick="showAddForm()"
+                    class="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-600 transition-colors"
+                >
+                    ➕ 添加想法
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto px-4 py-6">
+        <!-- Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="bg-white p-4 rounded-xl shadow-sm border">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm">待完成</p>
+                        <p class="text-2xl font-bold text-orange-600" id="pending-count">0</p>
+                    </div>
+                    <div class="text-2xl">📅</div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-4 rounded-xl shadow-sm border">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm">进行中</p>
+                        <p class="text-2xl font-bold text-blue-600" id="progress-count">0</p>
+                    </div>
+                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <div class="w-4 h-4 bg-blue-500 rounded-full animate-pulse"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl shadow-sm border">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm">已完成</p>
+                        <p class="text-2xl font-bold text-green-600" id="completed-count">0</p>
+                    </div>
+                    <div class="text-2xl">✅</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Todo List -->
+        <div id="todo-list" class="space-y-4">
+            <div class="text-center py-12">
+                <div class="text-6xl mb-4">👥</div>
+                <p class="text-gray-500 mb-2">还没有任何想法</p>
+                <button 
+                    onclick="showAddForm()"
+                    class="text-blue-500 hover:text-blue-600"
+                >
+                    添加第一个想法
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Form Modal -->
+    <div id="add-form" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl p-6 w-full max-w-md">
+            <h2 class="text-xl font-bold mb-4">添加新想法</h2>
+            <form onsubmit="addTodo(event)" class="space-y-4">
+                <input 
+                    type="text" 
+                    id="todo-title"
+                    placeholder="标题（如：去桂林旅游）"
+                    class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
+                />
+                <textarea 
+                    id="todo-description"
+                    placeholder="详细描述..."
+                    rows="3"
+                    class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                ></textarea>
+                <select 
+                    id="todo-category"
+                    class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                    <option value="旅游">🏖️ 旅游</option>
+                    <option value="聚餐">🍽️ 聚餐</option>
+                    <option value="桌游">🎲 桌游</option>
+                    <option value="运动">🏃 运动</option>
+                    <option value="学习">📚 学习</option>
+                    <option value="其他">📌 其他</option>
+                </select>
+                <div class="flex gap-3 mt-6">
+                    <button 
+                        type="button"
+                        onclick="hideAddForm()"
+                        class="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                    >
+                        取消
+                    </button>
+                    <button 
+                        type="submit"
+                        class="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                    >
+                        添加
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 数据存储
+        let todos = JSON.parse(localStorage.getItem('group-todos') || '[]');
+        
+        // 初始化演示数据（如果没有数据的话）
+        if (todos.length === 0) {
+            todos = [
+                {
+                    id: '1',
+                    title: '一起去桂林旅游',
+                    description: '计划3天2夜，看漓江风景',
+                    category: '旅游',
+                    status: 'pending',
+                    created_at: '2024-01-15T10:00:00Z'
+                },
+                {
+                    id: '2',
+                    title: '聚餐吃火锅',
+                    description: '周末一起去海底捞',
+                    category: '聚餐',
+                    status: 'completed',
+                    created_at: '2024-01-10T18:00:00Z'
+                },
+                {
+                    id: '3',
+                    title: '一起玩剧本杀',
+                    description: '体验最新的恐怖剧本',
+                    category: '桌游',
+                    status: 'in_progress',
+                    created_at: '2024-01-12T14:00:00Z'
+                }
+            ];
+            saveTodos();
+        }
+
+        // 保存数据
+        function saveTodos() {
+            localStorage.setItem('group-todos', JSON.stringify(todos));
+        }
+
+        // 获取状态对应的样式
+        function getStatusStyle(status) {
+            switch(status) {
+                case 'completed': return 'bg-green-100 text-green-800';
+                case 'in_progress': return 'bg-blue-100 text-blue-800';
+                default: return 'bg-orange-100 text-orange-800';
+            }
+        }
+
+        // 获取状态对应的中文
+        function getStatusText(status) {
+            switch(status) {
+                case 'completed': return '已完成';
+                case 'in_progress': return '进行中';
+                default: return '待完成';
+            }
+        }
+
+        // 获取分类对应的图标
+        function getCategoryIcon(category) {
+            switch(category) {
+                case '旅游': return '🏖️';
+                case '聚餐': return '🍽️';
+                case '桌游': return '🎲';
+                case '运动': return '🏃';
+                case '学习': return '📚';
+                default: return '📌';
+            }
+        }
+
+        // 更新统计
+        function updateStats() {
+            const pending = todos.filter(t => t.status === 'pending').length;
+            const progress = todos.filter(t => t.status === 'in_progress').length;
+            const completed = todos.filter(t => t.status === 'completed').length;
+            
+            document.getElementById('pending-count').textContent = pending;
+            document.getElementById('progress-count').textContent = progress;
+            document.getElementById('completed-count').textContent = completed;
+        }
+
+        // 渲染待办列表
+        function renderTodos() {
+            const container = document.getElementById('todo-list');
+            
+            if (todos.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <div class="text-6xl mb-4">👥</div>
+                        <p class="text-gray-500 mb-2">还没有任何想法</p>
+                        <button 
+                            onclick="showAddForm()"
+                            class="text-blue-500 hover:text-blue-600"
+                        >
+                            添加第一个想法
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = todos.map(todo => `
+                <div class="bg-white p-6 rounded-xl shadow-sm border hover:shadow-md transition-shadow">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-3 mb-2">
+                                <h3 class="text-lg font-semibold text-gray-900">${todo.title}</h3>
+                                <span class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                                    ${getCategoryIcon(todo.category)} ${todo.category}
+                                </span>
+                                <select 
+                                    onchange="updateTodoStatus('${todo.id}', this.value)"
+                                    class="px-2 py-1 text-xs font-medium rounded-full border-0 cursor-pointer ${getStatusStyle(todo.status)}"
+                                >
+                                    <option value="pending" ${todo.status === 'pending' ? 'selected' : ''}>待完成</option>
+                                    <option value="in_progress" ${todo.status === 'in_progress' ? 'selected' : ''}>进行中</option>
+                                    <option value="completed" ${todo.status === 'completed' ? 'selected' : ''}>已完成</option>
+                                </select>
+                            </div>
+                            <p class="text-gray-600 mb-3">${todo.description}</p>
+                            <p class="text-sm text-gray-400">
+                                创建于 ${new Date(todo.created_at).toLocaleDateString('zh-CN')}
+                            </p>
+                        </div>
+                        <div class="ml-4">
+                            <button
+                                onclick="deleteTodo('${todo.id}')"
+                                class="text-gray-400 hover:text-red-500 p-2"
+                                title="删除"
+                            >
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            updateStats();
+        }
+
+        // 显示添加表单
+        function showAddForm() {
+            document.getElementById('add-form').classList.remove('hidden');
+        }
+
+        // 隐藏添加表单
+        function hideAddForm() {
+            document.getElementById('add-form').classList.add('hidden');
+            document.getElementById('todo-title').value = '';
+            document.getElementById('todo-description').value = '';
+            document.getElementById('todo-category').value = '旅游';
+        }
+
+        // 添加待办事项
+        function addTodo(event) {
+            event.preventDefault();
+            
+            const title = document.getElementById('todo-title').value.trim();
+            const description = document.getElementById('todo-description').value.trim();
+            const category = document.getElementById('todo-category').value;
+            
+            if (!title) return;
+
+            const newTodo = {
+                id: Date.now().toString(),
+                title,
+                description,
+                category,
+                status: 'pending',
+                created_at: new Date().toISOString()
+            };
+
+            todos.unshift(newTodo);
+            saveTodos();
+            renderTodos();
+            hideAddForm();
+        }
+
+        // 更新待办事项状态
+        function updateTodoStatus(id, status) {
+            todos = todos.map(todo => 
+                todo.id === id ? { ...todo, status } : todo
+            );
+            saveTodos();
+            renderTodos();
+        }
+
+        // 删除待办事项
+        function deleteTodo(id) {
+            if (confirm('确定要删除这个想法吗？')) {
+                todos = todos.filter(todo => todo.id !== id);
+                saveTodos();
+                renderTodos();
+            }
+        }
+
+        // 初始化
+        renderTodos();
+    </script>
+</body>
+</html>
