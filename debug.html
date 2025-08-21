@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>环境变量调试</title>
+</head>
+<body>
+    <h1>环境变量调试</h1>
+    <div id="debug-info"></div>
+    <script>
+        const debugInfo = {
+            supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
+            hasSupabaseKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY,
+            keyLength: import.meta.env.VITE_SUPABASE_ANON_KEY?.length || 0,
+            allEnvVars: Object.keys(import.meta.env).filter(key => key.startsWith('VITE_'))
+        };
+        
+        document.getElementById('debug-info').innerHTML = `
+            <pre>${JSON.stringify(debugInfo, null, 2)}</pre>
+        `;
+    </script>
+</body>
+</html>
